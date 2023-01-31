@@ -44,7 +44,7 @@ int scan_all_available_devices(char **devices_names) {
 
     //Assing list to argument buffer
     currentDevice = all_devices;
-    while(currentDevice != NULL) {
+    while((currentDevice != NULL) && (num_of_devices < DEVICE_LIST_MAX_SIZE)) {
         devices_names[num_of_devices++] = currentDevice->name;
         currentDevice = currentDevice->next;
     }
