@@ -5,8 +5,6 @@
 #include "../error_handler/error_handler.h"
 #include "../globals/globals.h"
 
-char errbuf[PCAP_ERRBUF_SIZE];
-
 int scan_all_available_devices(char **devices_names) {
     pcap_if_t *all_devices;
     pcap_if_t *currentDevice;
