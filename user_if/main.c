@@ -5,6 +5,8 @@
 #include "../globals/globals.h"
 
 char* static_menu(char** devices_list, int num_of_devices);
+void clear_screen();
+void display_banner();
 
 int main (int argc, char** argv) {
     char *devices_list[DEVICE_LIST_MAX_SIZE];
@@ -16,7 +18,7 @@ int main (int argc, char** argv) {
     // Initialize library to use local encoding
     errNum = pcap_init(PCAP_CHAR_ENC_LOCAL, errbuf);
     if (errNum == PCAP_ERROR) {
-        display_error("Could not initialize pcap library!");
+        pcap_error("Could not initialize pcap library!");
     }
     #endif
 
@@ -26,31 +28,53 @@ int main (int argc, char** argv) {
 }
 
 char* static_menu(char** devices_list, int num_of_devices) {
-    int selection = 0;
+    int selection = -1;
 
-    //BANNER
+    clear_screen();
+
+    display_banner();
+
+    //Loop until user selects a valid option
+    while ((selection < 0) || (selection > num_of_devices)) {
+        printf("\n");
+        printf("Select one of your devices to sniff the network :\n");
+        printf("\n");
+
+        for(int i = 0; i < num_of_devices; i++) {
+            printf("-= %d =- %s\n", i, devices_list[i]);
+        }
+
+        printf("\n");
+        printf("Enter the number and press ENTER :\n");
+        scanf("%d", &selection);
+
+        if ((selection >= 0) && (selection < num_of_devices)) {
+            //Option chosen correctly
+            printf("You have selected : %s\n", devices_list[selection]);
+            return devices_list[selection];
+        }
+
+        clear_screen();
+
+        display_banner();
+
+        display_error("Please choose a valid number");
+    }
+}
+
+void clear_screen() {
+    system("clear||cls");
+}
+
+void display_banner() {
+    printf("\n");
+    printf("\n");
     printf("╔═══╗    ╔═══╗       ╔═╗ ╔═╗\n");
     printf("║╔═╗║    ║╔═╗║       ║╔╝ ║╔╝\n");
     printf("║║ ║║╔╗╔╗║╚══╗╔═╗ ╔╗╔╝╚╗╔╝╚╗╔══╗╔═╗\n");
     printf("║║ ║║╚╬╬╝╚══╗║║╔╗╗╠╣╚╗╔╝╚╗╔╝║╔╗║║╔╝\n");
     printf("║╚═╝║╔╬╬╗║╚═╝║║║║║║║ ║║  ║║ ║║═╣║║\n");
     printf("╚═══╝╚╝╚╝╚═══╝╚╝╚╝╚╝ ╚╝  ╚╝ ╚══╝╚╝\n");
-
-
     printf("\n");
-    printf("Select one of your devices to sniff the network :\n");
     printf("\n");
-
-    for(int i = 0; i < num_of_devices; i++) {
-        printf("-= %d =- %s\n", i, devices_list[i]);
-    }
-
-    printf("\n");
-    printf("Enter the number and press ENTER :\n");
-    scanf("%d", &selection);
-
-    printf("\n");
-    printf("You have selected : %s\n", devices_list[selection]);
-
-    return devices_list[selection];
 }

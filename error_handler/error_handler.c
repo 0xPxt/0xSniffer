@@ -3,10 +3,16 @@
 #include "error_handler.h"
 #include "../globals/globals.h"
 
-void display_error(char *error_message) {
-    printf("-=-=-=-=-=-=-= ERROR =-=-=-=-=-=-=-\n");
+void pcap_error(char *error_message) {
+    printf("-=-=-=-=-=-=-= PCAP ERROR! =-=-=-=-=-=-=-\n");
     printf("%s\n", error_message);
-    printf("[ERROR] : %s\n", errbuf);
-    printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+    printf("[PCAP ERROR] : %s\n", errbuf);
+    printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
     exit(1);
+}
+
+void display_error(char *error_message) {
+    printf("-=-=-=-=-=-=-=-=- ERROR -=-=-=-=-=-=-=-=-\n");
+    printf("[ERROR] : %s\n", error_message);
+    printf("-=-=-=-=-=-=-=-=-=-=-=-=-=--==-=-=-=-=-=-\n");
 }

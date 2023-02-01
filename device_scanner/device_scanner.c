@@ -12,7 +12,7 @@ int scan_all_available_devices(char **devices_names) {
 
     //Find list of nd non-loopback devices
     if(pcap_findalldevs(&all_devices, errbuf) == PCAP_ERROR) {
-        display_error("Error scanning for devices");
+        pcap_error("Error scanning for devices");
     }
 
     //Assign list to argument buffer
