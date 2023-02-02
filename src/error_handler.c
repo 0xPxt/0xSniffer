@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "error_handler.h"
-#include "../globals/globals.h"
+#include "globals.h"
 
 void pcap_error(char *error_message) {
     printf("-=-=-=-=-=-=-= PCAP ERROR! =-=-=-=-=-=-=-\n");

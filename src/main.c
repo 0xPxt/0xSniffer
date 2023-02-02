@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../device_scanner/device_scanner.h"
-#include "../error_handler/error_handler.h"
-#include "../globals/globals.h"
+#include "device_scanner.h"
+#include "error_handler.h"
+#include "globals.h"
 
 char* static_menu(char** devices_list, int num_of_devices);
 void clear_screen();
@@ -63,7 +63,7 @@ char* static_menu(char** devices_list, int num_of_devices) {
 }
 
 void clear_screen() {
-    system("clear||cls");
+    printf("\033[2J\033[1;1H");
 }
 
 void display_banner() {
