@@ -1,5 +1,8 @@
 # 0xSniffer
 Network Sniffer 👃
 
-compiling with `gcc src/*.c -std=gnu17 -I include/ -lpcap`
-(We'll need a Makefile)
+Compiling :
+=====================================================================================
+* [LINUX] `gcc src/*.c -I include/ -o Sniffer -std=gnu17 -lpcap`
+* [WIN]   `gcc -g3 src\*.c -I include -o out\Sniffer.exe -lwpcap -lPacket -std=gnu17`
+=====================================================================================
