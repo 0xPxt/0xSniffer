@@ -48,7 +48,7 @@ char* static_menu(char** devices_list, int num_of_devices) {
         printf("Enter the number and press ENTER :\n");
         scanf("%d", &selection);
 
-        if ((selection >= 0) && (selection < num_of_devices)) {
+        if ((selection >= 0) && (selection =< num_of_devices)) {
             //Option chosen correctly
             printf("You have selected : %s\n", devices_list[selection]);
             return devices_list[selection];
