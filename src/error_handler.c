@@ -3,6 +3,8 @@
 #include "error_handler.h"
 #include "globals.h"
 
+char errbuf[PCAP_ERRBUF_SIZE];
+
 void pcap_error(char *error_message) {
     printf("-=-=-=-=-=-=-= PCAP ERROR! =-=-=-=-=-=-=-\n");
     printf("%s\n", error_message);
