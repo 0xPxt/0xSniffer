@@ -13,6 +13,6 @@ void pcap_error(char *error_message) {
 
 void display_error(char *error_message) {
     printf("-=-=-=-=-=-=-=-=- ERROR -=-=-=-=-=-=-=-=-\n");
-    printf("[ERROR] : %s\n", error_message);
+    printf("[WARNING] : %s\n", error_message);
     printf("-=-=-=-=-=-=-=-=-=-=-=-=-=--==-=-=-=-=-=-\n");
 }
