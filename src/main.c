@@ -13,6 +13,7 @@ int main (int argc, char** argv) {
     int num_of_devices = 0;
     int errNum = 0;
     char *device_selected;
+    pcap_t *handle;
 
     #if _WIN32
     // Initialize library to use local encoding
@@ -25,6 +26,23 @@ int main (int argc, char** argv) {
     num_of_devices = scan_all_available_devices(devices_list);
 
     device_selected = static_menu(devices_list, num_of_devices);
+
+    //Sniffing in promiscuous mode (3rd argument = 1)
+    handle = pcap_open_live(device_selected, BUFSIZ, 1, 1000, errbuf);
+
+    if (handle == NULL) {
+        pcap_error("Error opening sniffing seesion with device!");
+    }
+
+    //Link-layer header type values - https://www.tcpdump.org/linktypes.html
+    if (pcap_datalink(handle) != DLT_EN10MB) {
+        pcap_error("Device does not support Ethernet headers!");
+    }
+
+    /*
+     * We can add some filters to the sniffing
+     * see pcap_setfilter and pcap_compile
+     */
 }
 
 char* static_menu(char** devices_list, int num_of_devices) {
