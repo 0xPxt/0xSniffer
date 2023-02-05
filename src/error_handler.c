@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "error_handler.h"
 #include "globals.h"
+#include "device_scanner.h"
 
 char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -10,6 +11,7 @@ void pcap_error(char *error_message) {
     printf("%s\n", error_message);
     printf("[PCAP ERROR] : %s\n", errbuf);
     printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+    pcap_freealldevs(allDevices);
     exit(1);
 }
 
