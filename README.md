@@ -9,6 +9,6 @@ Compiling Sniffer:
 
 Compiling Logger:
 =====================================================================================
-* [LINUX] `gcc src/logger/*.c -I include/ -o out/Logger -std=gnu17`
-* [WIN]   `gcc -g3 src\logger\*.c -I include -o out\Logger.exe -std=gnu17`
+* [LINUX] `gcc src/logger/linux/*.c -I include/ -o out/Logger -std=gnu17`
+* [WIN]   `gcc -g3 src\logger\win32\*.c -I include -o out\Logger.exe -std=gnu17`
 =====================================================================================

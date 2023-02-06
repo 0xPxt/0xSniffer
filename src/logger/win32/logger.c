@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#if _WIN32
 #include <windows.h>
-#endif
 
 #define BUFSIZE 4096
 

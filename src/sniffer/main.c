@@ -10,6 +10,12 @@
 #include <winsock.h>
 #endif
 
+#ifdef __linux__
+#include <unistd.h>
+#include <fcntl.h>
+#include <pthread.h>
+#endif
+
 /* 4 bytes IP address */
 typedef struct ip_address
 {
@@ -44,14 +50,21 @@ typedef struct udp_header
 	u_short crc;			// Checksum
 }udp_header;
 
+#ifdef _WIN32
 HANDLE g_hChildStd_IN_Rd;
 HANDLE g_hChildStd_IN_Wr;
+#endif
+
+#ifdef __linux__
+int fileDescriptorWrite;
+pid_t processPid = 0;
+#endif
 
 static void DeviceSelectionMenu();
 static inline void ClearScreen();
 static void DisplayBanner();
 static void CreateAndStartLogger();
-static void WriteToPipe(LPCVOID msg, DWORD msgLength);
+static void WriteToPipe(void *msg, unsigned long msgLength);
 
 void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data);
 pcap_t *StartDeviceSniffer();
@@ -63,9 +76,9 @@ int main (int argc, char** argv) {
 
     #ifdef _WIN32
     // Initialize library to use local encoding
-    errNum = pcap_init(PCAP_CHAR_ENC_LOCAL, errbuf);
+    errNum = pcap_init(PCAP_CHAR_ENC_LOCAL, pcapErrBuff);
     if (errNum == PCAP_ERROR) {
-        pcap_error("Could not initialize pcap library!");
+        DisplayPcapErrorAndExit("Could not initialize pcap library!", TRUE);
     }
     #endif
 
@@ -88,6 +101,18 @@ int main (int argc, char** argv) {
     pcap_breakloop(adHandle);
 
     pcap_freealldevs(allDevices);
+
+    #ifdef __linux__
+    if (fileDescriptorWrite != 0) {
+        // Close pipe
+        close(fileDescriptorWrite);
+    }
+
+    if (processPid > 1) {
+        // Terminate logger
+        kill(processPid, SIGTERM);
+    }
+    #endif
 }
 
 #ifdef _WIN32
@@ -106,15 +131,15 @@ pcap_t *StartDeviceSniffer() {
 											            // 65536 grants that the whole packet will be captured on all the MACs.
 							1,				            // promiscuous mode (nonzero means promiscuous)
 							1000,			            // read timeout
-							errbuf			            // error buffer
+							pcapErrBuff			            // error buffer
 							)) == NULL)
 	{
-		pcap_error("Unable to open the adapter. It is not supported by Npcap");
+		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", TRUE);
 	}
 
     //Link-layer header type values - https://www.tcpdump.org/linktypes.html
     if (pcap_datalink(adhandle) != DLT_EN10MB) {
-        pcap_error("Device does not support Ethernet headers!");
+        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", FALSE);
     }
 
     thread = CreateThread(NULL, 0, Sniffer, (LPVOID)adhandle, 0, NULL);
@@ -157,7 +182,7 @@ void CreateChildProcess() {
 
     // If an error occurs, exit the application. 
     if (!bSuccess) {
-        pcap_error("CreateProcess");
+        DisplayErrorAndExit("CreateProcess");
     } else {
         // Close handles to the child process and its primary thread.
         CloseHandle(piProcInfo.hProcess);
@@ -170,7 +195,7 @@ void CreateChildProcess() {
     }
 }
 
-static void WriteToPipe(LPCVOID msg, DWORD msgLength) {
+static void WriteToPipe(void *msg, unsigned long msgLength) {
     (void) WriteFile(g_hChildStd_IN_Wr, msg, msgLength, NULL, NULL);
 }
 
@@ -184,13 +209,13 @@ static void CreateAndStartLogger() {
 
     // Create a pipe for the child process's STDIN. 
  
-    if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0)) 
-        pcap_error("Stdin CreatePipe"); 
+    if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0)) 
+        DisplayErrorAndExit("Stdin CreatePipe"); 
 
     // Ensure the write handle to the pipe for STDIN is not inherited. 
  
-    if ( ! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
-        pcap_error("Stdin SetHandleInformation"); 
+    if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
+        DisplayErrorAndExit("Stdin SetHandleInformation"); 
 
     // Create the child process. 
    
@@ -199,8 +224,78 @@ static void CreateAndStartLogger() {
     CloseHandle(g_hChildStd_IN_Rd);
 }
 #else
-void CreateAndStartLogger() {
-#error "To be implemented for LINUX"
+void *Sniffer(void *lpParam) {
+    pcap_t *handle = (pcap_t *)lpParam;
+    pcap_loop(handle, 0, PacketHandler, NULL);
+}
+
+pcap_t *StartDeviceSniffer() {
+    pthread_t thread_id;
+    pcap_t *adhandle;
+
+    // Prepare capture
+    if ((adhandle = pcap_open_live(currentDevice->name,	// name of the device
+							BUFSIZ,			            // portion of the packet to capture. 
+											            // 65536 grants that the whole packet will be captured on all the MACs.
+							1,				            // promiscuous mode (nonzero means promiscuous)
+							1000,			            // read timeout
+							pcapErrBuff			            // error buffer
+							)) == NULL)
+	{
+		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", TRUE);
+	}
+
+    //Link-layer header type values - https://www.tcpdump.org/linktypes.html
+    if (pcap_datalink(adhandle) != DLT_EN10MB) {
+        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", FALSE);
+    }
+
+    pthread_create(&thread_id, NULL, Sniffer, (void *)adhandle);
+
+
+}
+
+void CreateChildProcess() {
+}
+
+static void WriteToPipe(void *msg, unsigned long msgLength) {
+    write(fileDescriptorWrite, msg, msgLength);
+}
+
+#define PIPE_READ_END 0
+#define PIPE_WRITE_END 1
+
+static void CreateAndStartLogger() {
+    int pipeFileDescriptor[2];   
+    char buffer;
+
+    // Open pipe
+    if (pipe(pipeFileDescriptor) == -1) {
+        DisplayErrorAndExit("Could not open a pipe for the Logger!");
+    }
+
+    // Create child process
+    if ((processPid = fork()) < 0) {
+        DisplayErrorAndExit("Coluld not fork into a process for the Logger!");
+    }
+
+    // Discern between process
+    if (processPid == 0) {
+        // Child process
+        // Close write end of the pipe (Logger will not be writing into the pipe)
+        close(pipeFileDescriptor[PIPE_WRITE_END]);
+
+        // Execute logger.c
+        if (execl("./Logger", itoa(pipeFileDescriptor[0]))) < 0) {
+            DisplayErrorAndExit("Coluld not execute the logger!");
+        }
+    } else {
+        // Parent process
+        // Close write end of the pipe (Sniffer will not be reading from the pipe)
+        close(pipeFileDescriptor[PIPE_READ_END]);
+
+        fileDescriptorWrite = pipeFileDescriptor[PIPE_WRITE_END];
+    }
 }
 #endif
 
@@ -236,7 +331,7 @@ static void DeviceSelectionMenu() {
 
         DisplayBanner();
 
-        display_error("Please choose a valid number");
+        DisplayWarning("Please choose a valid number");
 
         numberOfDevices = RequestDeviceSelection(&selection);
     }

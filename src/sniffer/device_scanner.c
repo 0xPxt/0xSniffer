@@ -10,7 +10,7 @@ pcap_if_t *currentDevice;
 
 void getAllDevices() {
     //Find list of nd non-loopback devices
-    if(pcap_findalldevs(&allDevices, errbuf) == PCAP_ERROR) {
-        pcap_error("Error scanning for devices");
+    if(pcap_findalldevs(&allDevices, pcapErrBuff) == PCAP_ERROR) {
+        DisplayPcapErrorAndExit("Error scanning for devices", TRUE);
     }
 }
