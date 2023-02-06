@@ -44,18 +44,24 @@ typedef struct udp_header
 	u_short crc;			// Checksum
 }udp_header;
 
+HANDLE g_hChildStd_IN_Rd;
+HANDLE g_hChildStd_IN_Wr;
+
 static void DeviceSelectionMenu();
 static inline void ClearScreen();
 static void DisplayBanner();
+static void CreateAndStartLogger();
+static void WriteToPipe(LPCVOID msg, DWORD msgLength);
 
 void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data);
-void StartDeviceSniffer();
+pcap_t *StartDeviceSniffer();
 
 int main (int argc, char** argv) {
     int errNum = 0;
-    int selected_device_index;
-    #ifdef _WIN32
+    pcap_t *adHandle = NULL;
+    int number = 1;
 
+    #ifdef _WIN32
     // Initialize library to use local encoding
     errNum = pcap_init(PCAP_CHAR_ENC_LOCAL, errbuf);
     if (errNum == PCAP_ERROR) {
@@ -67,16 +73,35 @@ int main (int argc, char** argv) {
 
     DeviceSelectionMenu();
 
-    StartDeviceSniffer();
+    CreateAndStartLogger();
+
+    adHandle = StartDeviceSniffer();
+
+    do {
+        DisplayBanner();
+        printf("Currently listening on [%s] %s\n\n", currentDevice->name, currentDevice->description);
+        printf("Enter 0 to exit application: ");
+
+        scanf("%d", &number);
+    } while (number != 0);
+
+    pcap_breakloop(adHandle);
 
     pcap_freealldevs(allDevices);
 }
 
-void StartDeviceSniffer() {
-    pcap_t *adhandle;
-    int i;
+#ifdef _WIN32
+DWORD WINAPI Sniffer(LPVOID lpParam) {
+    pcap_t *handle = (pcap_t *)lpParam;
+    pcap_loop(handle, 0, PacketHandler, NULL);
+}
 
-	if ((adhandle = pcap_open_live(currentDevice->name,	// name of the device
+pcap_t *StartDeviceSniffer() {
+    HANDLE thread;
+    pcap_t *adhandle;
+
+    // Prepare capture
+    if ((adhandle = pcap_open_live(currentDevice->name,	// name of the device
 							BUFSIZ,			            // portion of the packet to capture. 
 											            // 65536 grants that the whole packet will be captured on all the MACs.
 							1,				            // promiscuous mode (nonzero means promiscuous)
@@ -86,18 +111,98 @@ void StartDeviceSniffer() {
 	{
 		pcap_error("Unable to open the adapter. It is not supported by Npcap");
 	}
-	
-	printf("\nListening on [%s] %s...\n", currentDevice->name, currentDevice->description);
 
     //Link-layer header type values - https://www.tcpdump.org/linktypes.html
     if (pcap_datalink(adhandle) != DLT_EN10MB) {
         pcap_error("Device does not support Ethernet headers!");
     }
 
-    pcap_loop(adhandle, 0, PacketHandler, NULL);
+    thread = CreateThread(NULL, 0, Sniffer, (LPVOID)adhandle, 0, NULL);
 
-    pcap_close(adhandle);
+    return adhandle;
 }
+
+void CreateChildProcess() {
+    TCHAR szCmdline[] = TEXT("Logger");
+    PROCESS_INFORMATION piProcInfo; 
+    STARTUPINFO siStartInfo;
+    BOOL bSuccess = FALSE; 
+
+    // Set up members of the PROCESS_INFORMATION structure.
+
+    ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
+
+    // Set up members of the STARTUPINFO structure.
+    // This structure specifies the STDIN and STDOUT handles for redirection.
+
+    ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+    siStartInfo.cb = sizeof(STARTUPINFO); 
+    siStartInfo.hStdError = NULL;
+    siStartInfo.hStdOutput = NULL;
+    siStartInfo.hStdInput = g_hChildStd_IN_Rd;
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    // Create the child process. 
+
+    bSuccess = CreateProcess(NULL, 
+        szCmdline,     // command line 
+        NULL,          // process security attributes 
+        NULL,          // primary thread security attributes 
+        TRUE,          // handles are inherited 
+        CREATE_NEW_CONSOLE,             // creation flags 
+        NULL,          // use parent's environment 
+        NULL,          // use parent's current directory 
+        &siStartInfo,  // STARTUPINFO pointer 
+        &piProcInfo);  // receives PROCESS_INFORMATION 
+
+    // If an error occurs, exit the application. 
+    if (!bSuccess) {
+        pcap_error("CreateProcess");
+    } else {
+        // Close handles to the child process and its primary thread.
+        CloseHandle(piProcInfo.hProcess);
+        CloseHandle(piProcInfo.hThread);
+
+        // Close handles to the stdin and stdout pipes no longer needed by the child process.
+        // If they are not explicitly closed, there is no way to recognize that the child process has ended.
+
+        CloseHandle(g_hChildStd_IN_Rd);
+    }
+}
+
+static void WriteToPipe(LPCVOID msg, DWORD msgLength) {
+    (void) WriteFile(g_hChildStd_IN_Wr, msg, msgLength, NULL, NULL);
+}
+
+static void CreateAndStartLogger() {
+    SECURITY_ATTRIBUTES saAttr;
+
+    // Set the bInheritHandle flag so pipe handles are inherited
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    // Create a pipe for the child process's STDIN. 
+ 
+    if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0)) 
+        pcap_error("Stdin CreatePipe"); 
+
+    // Ensure the write handle to the pipe for STDIN is not inherited. 
+ 
+    if ( ! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
+        pcap_error("Stdin SetHandleInformation"); 
+
+    // Create the child process. 
+   
+    CreateChildProcess();
+
+    CloseHandle(g_hChildStd_IN_Rd);
+}
+#else
+void CreateAndStartLogger() {
+#error "To be implemented for LINUX"
+}
+#endif
 
 static int RequestDeviceSelection(int *selection) {
     int numberOfDevices;
@@ -163,8 +268,11 @@ static void DisplayBanner() {
     printf("\n");
 }
 
+#define WRITE_BUFFER_SIZE 1024
+
 void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)
 {
+    char writeBuffer[WRITE_BUFFER_SIZE] = {' '};
 	struct tm *ltime;
 	char timestr[16];
 	ip_header *ih;
@@ -184,7 +292,7 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 	strftime( timestr, sizeof timestr, "%H:%M:%S", ltime);
 
 	/* print timestamp and length of the packet */
-	printf("%s.%.6d len:%d ", timestr, header->ts.tv_usec, header->len);
+	sprintf(writeBuffer, "%s.%.6d len:%d ", timestr, header->ts.tv_usec, header->len);
 
 	/* retireve the position of the ip header */
 	ih = (ip_header *) (pkt_data +
@@ -199,7 +307,7 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 	dport = ntohs( uh->dport );
 
 	/* print ip addresses and udp ports */
-	printf("%d.%d.%d.%d.%d -> %d.%d.%d.%d.%d\n",
+	sprintf(writeBuffer, "%d.%d.%d.%d.%d -> %d.%d.%d.%d.%d\n",
 		ih->saddr.byte1,
 		ih->saddr.byte2,
 		ih->saddr.byte3,
@@ -210,4 +318,10 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 		ih->daddr.byte3,
 		ih->daddr.byte4,
 		dport);
+
+    // Write to the pipe that is the standard input for a child process. 
+    // Data is written to the pipe's buffers, so it is not necessary to wait
+    // until the child process is running before writing data.
+
+    WriteToPipe(writeBuffer, WRITE_BUFFER_SIZE);
 }
