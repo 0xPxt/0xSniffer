@@ -4,6 +4,7 @@
 #include "device_scanner.h"
 #include "error_handler.h"
 #include "globals.h"
+#include <string.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -14,7 +15,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <signal.h>
 #endif
+
+ void itoa(int n, char s[]);
+ void reverse(char s[]);
 
 /* 4 bytes IP address */
 typedef struct ip_address
@@ -78,7 +84,7 @@ int main (int argc, char** argv) {
     // Initialize library to use local encoding
     errNum = pcap_init(PCAP_CHAR_ENC_LOCAL, pcapErrBuff);
     if (errNum == PCAP_ERROR) {
-        DisplayPcapErrorAndExit("Could not initialize pcap library!", TRUE);
+        DisplayPcapErrorAndExit("Could not initialize pcap library!", true);
     }
     #endif
 
@@ -134,12 +140,12 @@ pcap_t *StartDeviceSniffer() {
 							pcapErrBuff			            // error buffer
 							)) == NULL)
 	{
-		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", TRUE);
+		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", true);
 	}
 
     //Link-layer header type values - https://www.tcpdump.org/linktypes.html
     if (pcap_datalink(adhandle) != DLT_EN10MB) {
-        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", FALSE);
+        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", false);
     }
 
     thread = CreateThread(NULL, 0, Sniffer, (LPVOID)adhandle, 0, NULL);
@@ -151,7 +157,7 @@ void CreateChildProcess() {
     TCHAR szCmdline[] = TEXT("Logger");
     PROCESS_INFORMATION piProcInfo; 
     STARTUPINFO siStartInfo;
-    BOOL bSuccess = FALSE; 
+    BOOL bSuccess = false; 
 
     // Set up members of the PROCESS_INFORMATION structure.
 
@@ -173,7 +179,7 @@ void CreateChildProcess() {
         szCmdline,     // command line 
         NULL,          // process security attributes 
         NULL,          // primary thread security attributes 
-        TRUE,          // handles are inherited 
+        true,          // handles are inherited 
         CREATE_NEW_CONSOLE,             // creation flags 
         NULL,          // use parent's environment 
         NULL,          // use parent's current directory 
@@ -204,7 +210,7 @@ static void CreateAndStartLogger() {
 
     // Set the bInheritHandle flag so pipe handles are inherited
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-    saAttr.bInheritHandle = TRUE;
+    saAttr.bInheritHandle = true;
     saAttr.lpSecurityDescriptor = NULL;
 
     // Create a pipe for the child process's STDIN. 
@@ -242,12 +248,12 @@ pcap_t *StartDeviceSniffer() {
 							pcapErrBuff			            // error buffer
 							)) == NULL)
 	{
-		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", TRUE);
+		DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", true);
 	}
 
     //Link-layer header type values - https://www.tcpdump.org/linktypes.html
     if (pcap_datalink(adhandle) != DLT_EN10MB) {
-        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", FALSE);
+        DisplayPcapErrorAndExit("Device does not support Ethernet headers!", false);
     }
 
     pthread_create(&thread_id, NULL, Sniffer, (void *)adhandle);
@@ -267,7 +273,7 @@ static void WriteToPipe(void *msg, unsigned long msgLength) {
 
 static void CreateAndStartLogger() {
     int pipeFileDescriptor[2];   
-    char buffer;
+    char buffer[16];
 
     // Open pipe
     if (pipe(pipeFileDescriptor) == -1) {
@@ -286,7 +292,8 @@ static void CreateAndStartLogger() {
         close(pipeFileDescriptor[PIPE_WRITE_END]);
 
         // Execute logger.c
-        if (execl("./Logger", itoa(pipeFileDescriptor[0]))) < 0) {
+        itoa(pipeFileDescriptor[0], buffer);
+        if (execl("./Logger", buffer, (char*) NULL) < 0) {
             DisplayErrorAndExit("Coluld not execute the logger!");
         }
     } else {
@@ -379,7 +386,7 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 	/*
 	 * unused parameter
 	 */
-	(VOID)(param);
+	(void)(param);
 
 	/* convert the timestamp to readable format */
 	local_tv_sec = header->ts.tv_sec;
@@ -387,7 +394,7 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 	strftime( timestr, sizeof timestr, "%H:%M:%S", ltime);
 
 	/* print timestamp and length of the packet */
-	sprintf(writeBuffer, "%s.%.6d len:%d ", timestr, header->ts.tv_usec, header->len);
+	sprintf(writeBuffer, "%s.%.6ld len:%d ", timestr, header->ts.tv_usec, header->len);
 
 	/* retireve the position of the ip header */
 	ih = (ip_header *) (pkt_data +
@@ -420,3 +427,33 @@ void PacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char
 
     WriteToPipe(writeBuffer, WRITE_BUFFER_SIZE);
 }
+
+ /* reverse:  reverse string s in place */
+ void reverse(char s[])
+ {
+     int i, j;
+     char c;
+
+     for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
+         c = s[i];
+         s[i] = s[j];
+         s[j] = c;
+     }
+ }
+
+ /* itoa:  convert n to characters in s */
+ void itoa(int n, char s[])
+ {
+     int i, sign;
+
+     if ((sign = n) < 0)  /* record sign */
+         n = -n;          /* make n positive */
+     i = 0;
+     do {       /* generate digits in reverse order */
+         s[i++] = n % 10 + '0';   /* get next digit */
+     } while ((n /= 10) > 0);     /* delete it */
+     if (sign < 0)
+         s[i++] = '-';
+     s[i] = '\0';
+     reverse(s);
+ }

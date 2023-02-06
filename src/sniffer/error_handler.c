@@ -6,10 +6,10 @@
 
 char pcapErrBuff[PCAP_ERRBUF_SIZE];
 
-void DisplayPcapErrorAndExit(char *error_message, boolean printErrBuff) {
+void DisplayPcapErrorAndExit(char *error_message, bool printErrBuff) {
     printf("-=-=-=-=-=-=-= PCAP ERROR! =-=-=-=-=-=-=-\n");
     printf("%s\n", error_message);
-    if (printErrBuff == TRUE) {
+    if (printErrBuff == true) {
         printf("[PCAP ERROR] : %s\n", pcapErrBuff);
     }
     printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
