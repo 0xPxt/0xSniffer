@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "ErrorHandler.h"
 
@@ -47,12 +49,12 @@ void IOHandler_CreateAndStartLogger(void) {
 
     // Open pipe
     if (pipe(pipeFileDescriptor) == -1) {
-        DisplayErrorAndExit("Could not open a pipe for the Logger!");
+        ErrorHandler_DisplayErrorAndExit("Could not open a pipe for the Logger!");
     }
 
     // Create child process
     if ((IOHandler_loggerProcessId = fork()) < 0) {
-        DisplayErrorAndExit("Coluld not fork into a process for the Logger!");
+        ErrorHandler_DisplayErrorAndExit("Coluld not fork into a process for the Logger!");
     }
 
     // Discern between process
@@ -64,7 +66,7 @@ void IOHandler_CreateAndStartLogger(void) {
         // Execute logger.c
         itoa(pipeFileDescriptor[0], buffer);
         if (execl("./Logger", buffer, NULL) < 0) {
-            DisplayErrorAndExit("Coluld not execute the logger!");
+            ErrorHandler_DisplayErrorAndExit("Coluld not execute the logger!");
         }
     } else {
         // Parent process
@@ -80,5 +82,5 @@ void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
 }
 
 void IOHandler_CleanUp() {
-    CloseHandle(IOHandler_loggerStdInWr);
+    close(IOHandler_loggerStdInWr);
 }
