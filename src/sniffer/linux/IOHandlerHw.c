@@ -82,5 +82,7 @@ void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
 }
 
 void IOHandler_CleanUp() {
-    close(IOHandler_loggerStdInWr);
+    if (close(IOHandler_loggerStdInWr) != 0) {
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's write handle!);
+    }
 }
