@@ -14,6 +14,9 @@ DWORD WINAPI Listener(LPVOID pcapHandle) {
 
 void Sniffer_Start(void) {
     Sniffer_snifferHandle = CreateThread(NULL, 0, Listener, NULL, 0, NULL);
+    if (Sniffer_snifferHandle == NULL) {
+        ErrorHandler_DisplayErrorAndExit("[Sniffer] Could not start the Sniffer thread!);
+    }
 }
 
 void Sniffer_CleanUp(void) {
