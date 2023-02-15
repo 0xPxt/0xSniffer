@@ -18,5 +18,8 @@ void Sniffer_Start(void) {
 
 void Sniffer_CleanUp(void) {
     InterfaceHandler_StopCapturing();
-    CloseHandle(Sniffer_snifferHandle);
+    if (CloseHandle(Sniffer_snifferHandle) == 0) {
+        ErrorHandler_DisplayWarning("[Sniffer] Could not close the handle for the Sniffer!);
+    }
+    
 }
