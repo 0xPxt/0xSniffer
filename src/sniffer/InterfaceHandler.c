@@ -65,6 +65,8 @@ InterfaceHandler_status_t InterfaceHandler_OpenCapture() {
 void InterfaceHandler_CapturePackets() {
     if (InterfaceHandler_captureHandler != NULL) {
         pcap_loop(InterfaceHandler_captureHandler, 0, Sniffer_ParsePacket, NULL);
+    } else {
+        ErrorHandler_DisplayWarning("[InterfaceHandler] There is no capture handle open!");
     }
 }
 
