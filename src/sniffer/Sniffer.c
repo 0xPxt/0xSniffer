@@ -43,7 +43,7 @@ typedef struct udp_header
 	u_short crc;			// Checksum
 } udp_header;
 
-void Sniffer_Stop(void) {
+void Sniffer_Stop() {
     Sniffer_CleanUp();
 }
 

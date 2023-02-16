@@ -7,7 +7,7 @@
 
 HANDLE IOHandler_loggerStdInWr;
 
-void IOHandler_CreateAndStartLogger(void) {
+void IOHandler_CreateAndStartLogger() {
     SECURITY_ATTRIBUTES securityAttr;
     PROCESS_INFORMATION loggerProcessInfo;    
     STARTUPINFO startupInfo;
@@ -22,12 +22,12 @@ void IOHandler_CreateAndStartLogger(void) {
     // Create a pipe for the child process's STDIN. 
  
     if (!CreatePipe(&loggerStdInRd, &IOHandler_loggerStdInWr, &securityAttr, 0)) 
-        ErrorHandler_DisplayErrorAndExit("Stdin CreatePipe");
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not create the In read pipe for the logger.");
 
     // Ensure the write handle to the pipe for STDIN is not inherited. 
  
     if (!SetHandleInformation(IOHandler_loggerStdInWr, HANDLE_FLAG_INHERIT, 0))
-        ErrorHandler_DisplayErrorAndExit("Stdin SetHandleInformation"); 
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not set the pipe as STDIN for the logger."); 
 
     // Prepare parameters for child process creation.
 
@@ -60,21 +60,34 @@ void IOHandler_CreateAndStartLogger(void) {
 
     // If an error occurs, exit the application. 
     if (result == false) {
-        ErrorHandler_DisplayErrorAndExit("CreateProcess");
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not create the process for the logger.");
     }
 
     // Close handles to the child process and its primary thread.
-    CloseHandle(loggerProcessInfo.hProcess);
-    CloseHandle(loggerProcessInfo.hThread);
+    
+    if (CloseHandle(loggerProcessInfo.hProcess) == false) {
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's process handle.");
+    }
+
+    if (CloseHandle(loggerProcessInfo.hThread) == false) {
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's thread handle.");
+    }
 
     // Close handles to the stdin pipe no longer needed by the child process.
-    CloseHandle(loggerStdInRd);
+
+    if (CloseHandle(loggerStdInRd) == false) {
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's In Read pipe handle.");
+    }
 }
 
 void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
-    (void) WriteFile(IOHandler_loggerStdInWr, packet, packetLength, NULL, NULL);
+    if (WriteFile(IOHandler_loggerStdInWr, packet, packetLength, NULL, NULL) == false) {
+        ErrorHandler_DisplayWarning("[IOHandler] Error sending a packet to the Logger.");
+    }
 }
 
 void IOHandler_CleanUp() {
-    CloseHandle(IOHandler_loggerStdInWr);
+    if (CloseHandle(IOHandler_loggerStdInWr) == false) {
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's write handle.");
+    }
 }

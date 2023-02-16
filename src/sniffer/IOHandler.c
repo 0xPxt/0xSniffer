@@ -24,7 +24,7 @@ void IOHandler_RequestInterfaceSelection() {
     while (InterfaceHandler_SelectInterface(selection) != InterfaceHandler_status_OK) {
         LogUtils_DisplayBanner();
 
-        ErrorHandler_DisplayWarning("Invalid interface number, please choose a valid number");
+        ErrorHandler_DisplayWarning("[IOHandler] Invalid interface number, please choose a valid number");
         
         InterfaceHandler_PrintInterfaces();
 
@@ -58,7 +58,7 @@ void IOHandler_RequestNewCommand() {
     while (CmdHandler_ProcessCommand(selection) != CmdHandler_status_OK) {
         LogUtils_DisplayBanner();
 
-        ErrorHandler_DisplayWarning("Invalid command, please choose a valid number");
+        ErrorHandler_DisplayWarning("[IOHandler] Invalid command, please choose a valid number");
         
         CmdHandler_PrintCommandList();
 

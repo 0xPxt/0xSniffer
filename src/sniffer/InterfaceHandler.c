@@ -14,7 +14,7 @@ pcap_t *InterfaceHandler_captureHandler;
 void InterfaceHandler_Init() {
     // Find list of interfaces available in the system
     if(pcap_findalldevs(&InterfaceHandler_availableInterfaces, ErrorHandler_GetPcapErrorBuffer()) == PCAP_ERROR) {
-        ErrorHandler_DisplayPcapErrorAndExit("Error scanning for devices", true);
+        ErrorHandler_DisplayPcapErrorAndExit("[InterfaceHandler] Error scanning for devices", true);
     }
 }
 
@@ -50,12 +50,12 @@ InterfaceHandler_status_t InterfaceHandler_OpenCapture() {
                                 ErrorHandler_GetPcapErrorBuffer()                                       // Error buffer.
                                 )) == NULL)
         {
-            ErrorHandler_DisplayPcapErrorAndExit("Unable to open the adapter. It is not supported by Npcap", true);
+            ErrorHandler_DisplayPcapErrorAndExit("[InterfaceHandler] Unable to open the adapter. It is not supported by Npcap", true);
         }
 
         //Link-layer header type values - https://www.tcpdump.org/linktypes.html
         if (pcap_datalink(InterfaceHandler_captureHandler) != DLT_EN10MB) {
-            ErrorHandler_DisplayPcapErrorAndExit("Device does not support Ethernet headers!", false);
+            ErrorHandler_DisplayPcapErrorAndExit("[InterfaceHandler] Device does not support Ethernet headers!", false);
         }
 
         return InterfaceHandler_status_OK;

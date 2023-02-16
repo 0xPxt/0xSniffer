@@ -42,7 +42,7 @@ void ErrorHandler_DisplayWarning(char *warning_message) {
     printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 }
 
-char *ErrorHandler_GetPcapErrorBuffer(void) {
+char *ErrorHandler_GetPcapErrorBuffer() {
     return ErrorHandler_pcapErrBuff;
 }
 

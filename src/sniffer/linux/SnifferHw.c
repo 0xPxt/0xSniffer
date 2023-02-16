@@ -13,14 +13,14 @@ void *Listener(void *lpParam) {
     InterfaceHandler_CapturePackets();
 }
 
-void Sniffer_Start(void) {
+void Sniffer_Start() {
     
     if (pthread_create(&Sniffer_snifferHandle, NULL, Listener, NULL) != 0) {
         ErrorHandler_DisplayErrorAndExit("[Sniffer] Could not create a thread for the Sniffer!");
     }
 }
 
-void Sniffer_CleanUp(void) {
+void Sniffer_CleanUp() {
     InterfaceHandler_StopCapturing();
     if (Sniffer_snifferHandle != NULL) {
         if (pthread_cancel(Sniffer_snifferHandle) != 0) {

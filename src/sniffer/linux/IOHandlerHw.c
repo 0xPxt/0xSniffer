@@ -6,11 +6,14 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "ErrorHandler.h"
 
 #define PIPE_READ_END 0
 #define PIPE_WRITE_END 1
+
+#define ERROR_MESSAGE_BUFFER_SIZE 128
 
 int IOHandler_loggerStdInWr;
 pid_t IOHandler_loggerProcessId;
@@ -43,46 +46,62 @@ static void itoa(int n, char s[])
     reverse(s);
 }
 
-void IOHandler_CreateAndStartLogger(void) {
+void IOHandler_CreateAndStartLogger() {
     int pipeFileDescriptor[2];   
     char buffer[16];
 
     // Open pipe
     if (pipe(pipeFileDescriptor) == -1) {
-        ErrorHandler_DisplayErrorAndExit("Could not open a pipe for the Logger!");
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not open a pipe for the Logger.");
     }
 
     // Create child process
     if ((IOHandler_loggerProcessId = fork()) < 0) {
-        ErrorHandler_DisplayErrorAndExit("Coluld not fork into a process for the Logger!");
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Coluld not fork into a process for the Logger.");
     }
 
     // Discern between process
     if (IOHandler_loggerProcessId == 0) {
         // Child process
         // Close write end of the pipe (Logger will not be writing into the pipe)
-        close(pipeFileDescriptor[PIPE_WRITE_END]);
+        if (close(pipeFileDescriptor[PIPE_WRITE_END]) == -1) {
+            ErrorHandler_DisplayWarning("[IOHandler] Could not close the write end of the Loggers pipe.");
+        }
 
         // Execute logger.c
         itoa(pipeFileDescriptor[0], buffer);
         if (execl("./Logger", buffer, NULL) < 0) {
-            ErrorHandler_DisplayErrorAndExit("Coluld not execute the logger!");
+            ErrorHandler_DisplayErrorAndExit("[IOHandler] Coluld not execute the logger.");
         }
     } else {
         // Parent process
         // Close write end of the pipe (Sniffer will not be reading from the pipe)
-        close(pipeFileDescriptor[PIPE_READ_END]);
+        if (close(pipeFileDescriptor[PIPE_READ_END]) == -1) {
+            ErrorHandler_DisplayWarning("[IOHandler] Could not close the read end of the Loggers pipe.");
+        }
 
         IOHandler_loggerStdInWr = pipeFileDescriptor[PIPE_WRITE_END];
     }
 }
 
 void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
-    (void) write(IOHandler_loggerStdInWr, packet, packetLength);
+    ssize_t bytesWritten = write(IOHandler_loggerStdInWr, packet, (size_t) packetLength);
+    if (bytesWritten != (ssize_t) packetLength) {
+        if (bytesWritten < 0) {
+            char buffer[ERROR_MESSAGE_BUFFER_SIZE];
+            if (sprintf(buffer, "[IOHandler] Only %d/%d bytes where sent to the Logger.", bytesWritten, packetLength) < 0) {
+                ErrorHandler_DisplayWarning("[IOHandler] Only a part of the packet has been sent to the Logger.");
+            } else {
+                ErrorHandler_DisplayWarning(buffer);
+            }
+        } else {
+            ErrorHandler_DisplayWarning("[IOHandler] Error sending a packet to the Logger.");
+        }
+    }
 }
 
 void IOHandler_CleanUp() {
     if (close(IOHandler_loggerStdInWr) != 0) {
-        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's write handle!);
+        ErrorHandler_DisplayWarning("[IOHandler] Could not close the logger's write handle.");
     }
 }
