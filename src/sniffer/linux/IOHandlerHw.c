@@ -57,7 +57,7 @@ void IOHandler_CreateAndStartLogger() {
 
     // Create child process
     if ((IOHandler_loggerProcessId = fork()) < 0) {
-        ErrorHandler_DisplayErrorAndExit("[IOHandler] Coluld not fork into a process for the Logger.");
+        ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not fork into a process for the Logger.");
     }
 
     // Discern between process
@@ -71,7 +71,7 @@ void IOHandler_CreateAndStartLogger() {
         // Execute logger.c
         itoa(pipeFileDescriptor[0], buffer);
         if (execl("./Logger", buffer, NULL) < 0) {
-            ErrorHandler_DisplayErrorAndExit("[IOHandler] Coluld not execute the logger.");
+            ErrorHandler_DisplayErrorAndExit("[IOHandler] Could not execute the logger.");
         }
     } else {
         // Parent process
@@ -89,7 +89,7 @@ void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
     if (bytesWritten != (ssize_t) packetLength) {
         if (bytesWritten < 0) {
             char buffer[ERROR_MESSAGE_BUFFER_SIZE];
-            if (sprintf(buffer, "[IOHandler] Only %d/%d bytes where sent to the Logger.", bytesWritten, packetLength) < 0) {
+            if (sprintf(buffer, "[IOHandler] Only %ld/%ld bytes where sent to the Logger.", bytesWritten, packetLength) < 0) {
                 ErrorHandler_DisplayWarning("[IOHandler] Only a part of the packet has been sent to the Logger.");
             } else {
                 ErrorHandler_DisplayWarning(buffer);

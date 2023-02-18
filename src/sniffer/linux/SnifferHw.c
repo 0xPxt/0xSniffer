@@ -7,7 +7,7 @@
 #include "InterfaceHandler.h"
 #include "ErrorHandler.h"
 
-pthread_t Sniffer_snifferHandle = NULL;
+pthread_t Sniffer_snifferHandle = (pthread_t) NULL;
 
 void *Listener(void *lpParam) {
     InterfaceHandler_CapturePackets();
@@ -22,10 +22,10 @@ void Sniffer_Start() {
 
 void Sniffer_CleanUp() {
     InterfaceHandler_StopCapturing();
-    if (Sniffer_snifferHandle != NULL) {
+    if (Sniffer_snifferHandle != (pthread_t) NULL) {
         if (pthread_cancel(Sniffer_snifferHandle) != 0) {
             ErrorHandler_DisplayWarning("[Sniffer] Could not close the handle!");
         }
-        Sniffer_snifferHandle = NULL;
+        Sniffer_snifferHandle = (pthread_t) NULL;
     }
 }
