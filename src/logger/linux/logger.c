@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define BUFSIZE SSIZE_MAX
+#define BUFSIZE 4096
 
 int main(int argc, char *argv[]) {
     int pipeFileDescriptor;
