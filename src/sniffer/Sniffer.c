@@ -5,7 +5,7 @@
 #include <time.h>
 #include <string.h>
 
-#include "IOHandler.h"
+#include "IOHandlerMain.h"
 
 #define WRITE_BUFFER_SIZE 1024
 
@@ -94,5 +94,5 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
     // Data is written to the pipe's buffers, so it is not necessary to wait
     // until the child process is running before writing data.
 
-    IOHandler_WriteToLogger(writeBuffer, WRITE_BUFFER_SIZE);
+    IOHandlerMain_WriteToLogger(writeBuffer, WRITE_BUFFER_SIZE);
 }

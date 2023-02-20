@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #include "InterfaceHandler.h"
-#include "IOHandler.h"
+#include "IOHandlerMain.h"
 #include "Sniffer.h"
 
 char ErrorHandler_pcapErrBuff[PCAP_ERRBUF_SIZE];
@@ -13,7 +13,7 @@ char ErrorHandler_pcapErrBuff[PCAP_ERRBUF_SIZE];
 static void CleanUpAndExit() {
     Sniffer_CleanUp();
     InterfaceHandler_CleanUp();
-    IOHandler_CleanUp();
+    IOHandlerMain_CleanUp();
     exit(1);
 }
 

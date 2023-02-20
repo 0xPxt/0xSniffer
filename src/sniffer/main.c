@@ -3,7 +3,7 @@
 
 #include "InterfaceHandler.h"
 #include "ErrorHandler.h"
-#include "IOHandler.h"
+#include "IOHandlerMain.h"
 #include "Sniffer.h"
 
 #define HAVE_REMOTE
@@ -21,16 +21,16 @@ int main (int argc, char** argv) {
 
     InterfaceHandler_Init();
 
-    IOHandler_CreateAndStartLogger();
+    IOHandlerMain_CreateAndStartLogger();
 
-    IOHandler_RequestInterfaceSelection();
+    IOHandlerMain_RequestInterfaceSelection();
 
     InterfaceHandler_OpenCapture();
 
     Sniffer_Start();
 
     for (;;) {
-        IOHandler_RequestNewCommand();
+        IOHandlerMain_RequestNewCommand();
     }
 
     ErrorHandler_CleanExit();

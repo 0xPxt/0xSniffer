@@ -1,5 +1,5 @@
 
-#include "IOHandler.h"
+#include "IOHandlerMain.h"
 
 #include <stdio.h>
 
@@ -8,7 +8,7 @@
 #include "CmdHandler.h"
 #include "LogUtils.h"
 
-void IOHandler_RequestInterfaceSelection() {
+void IOHandlerMain_RequestInterfaceSelection() {
     int selection;
 
     LogUtils_DisplayBanner();
@@ -24,7 +24,7 @@ void IOHandler_RequestInterfaceSelection() {
     while (InterfaceHandler_SelectInterface(selection) != InterfaceHandler_status_OK) {
         LogUtils_DisplayBanner();
 
-        ErrorHandler_DisplayWarning("[IOHandler] Invalid interface number, please choose a valid number");
+        ErrorHandler_DisplayWarning("[IOHandlerMain] Invalid interface number, please choose a valid number");
         
         InterfaceHandler_PrintInterfaces();
 
@@ -38,7 +38,7 @@ void IOHandler_RequestInterfaceSelection() {
     InterfaceHandler_PrintSelectedInterfaceInfo();
 }
 
-void IOHandler_RequestNewCommand() {
+void IOHandlerMain_RequestNewCommand() {
     int selection;
 
     LogUtils_DisplayBanner();
@@ -58,7 +58,7 @@ void IOHandler_RequestNewCommand() {
     while (CmdHandler_ProcessCommand(selection) != CmdHandler_status_OK) {
         LogUtils_DisplayBanner();
 
-        ErrorHandler_DisplayWarning("[IOHandler] Invalid command, please choose a valid number");
+        ErrorHandler_DisplayWarning("[IOHandlerMain] Invalid command, please choose a valid number");
         
         CmdHandler_PrintCommandList();
 
