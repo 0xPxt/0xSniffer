@@ -87,7 +87,7 @@ void IOHandler_CreateAndStartLogger() {
 void IOHandler_WriteToLogger(void *packet, unsigned long packetLength) {
     ssize_t bytesWritten = write(IOHandler_loggerStdInWr, packet, (size_t) packetLength);
     if (bytesWritten != (ssize_t) packetLength) {
-        if (bytesWritten < 0) {
+        if (bytesWritten >= 0) {
             char buffer[ERROR_MESSAGE_BUFFER_SIZE];
             if (sprintf(buffer, "[IOHandler] Only %d/%d bytes where sent to the Logger.", bytesWritten, packetLength) < 0) {
                 ErrorHandler_DisplayWarning("[IOHandler] Only a part of the packet has been sent to the Logger.");
