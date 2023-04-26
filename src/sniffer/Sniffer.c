@@ -229,18 +229,24 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
 
     /* print ip addresses and udp ports */
     sprintf(writeBuffer + strlen(writeBuffer), "\n------------------------------------------------------------\n");
-    sprintf(writeBuffer + strlen(writeBuffer), "%*s\t -> \t%*s\n",
+    sprintf(writeBuffer + strlen(writeBuffer), "%*s\t -> \t%*s\n\n",
         20,                // Format so that the string always occupies 20 chars.
         src_ip_string,
         20,                // Format so that the string always occupies 20 chars.
         dest_ip_string);
 
     // Print Protocol
-    sprintf(writeBuffer + strlen(writeBuffer), "  Protocol : %s\n",
+    sprintf(writeBuffer + strlen(writeBuffer), "  Protocol  : %s\n",
         protocols[ih->proto]);
 
-    // Print timestamp and length of the packet
-    sprintf(writeBuffer + strlen(writeBuffer), "  Time : %s.%.6ld Length : %d\n", timestr, header->ts.tv_usec, header->len);
+    // Print TTL
+    sprintf(writeBuffer + strlen(writeBuffer), "  TTL       : %d\n", ih->ttl);
+
+    // Print packet length
+    sprintf(writeBuffer + strlen(writeBuffer), "  Length    : %d\n", header->len);
+
+    // Print timestamp
+    sprintf(writeBuffer + strlen(writeBuffer), "  Time      : %s.%.6ld\n", timestr, header->ts.tv_usec);
     sprintf(writeBuffer + strlen(writeBuffer), "------------------------------------------------------------\n");
 
     // Write to the pipe that is the standard input for a child process.
