@@ -42,11 +42,11 @@ InterfaceHandler_status_t InterfaceHandler_OpenCapture() {
         return InterfaceHandler_status_ERROR;
     } else {
         // Prepare capture
-        if ((InterfaceHandler_captureHandler = pcap_open_live(InterfaceHandler_currentInterface->name,	// Name of the device.
-                                BUFSIZ,			                                                        // Portion of the packet to capture. 
+        if ((InterfaceHandler_captureHandler = pcap_open_live(InterfaceHandler_currentInterface->name,    // Name of the device.
+                                BUFSIZ,                                                                    // Portion of the packet to capture. 
                                                                                                         // Value 65536 grants that the whole packet is captured on all the MACs.
-                                1,				                                                        // Promiscuous mode.
-                                1000,			                                                        // Read timeout.
+                                1,                                                                        // Promiscuous mode.
+                                1000,                                                                    // Read timeout.
                                 ErrorHandler_GetPcapErrorBuffer()                                       // Error buffer.
                                 )) == NULL)
         {

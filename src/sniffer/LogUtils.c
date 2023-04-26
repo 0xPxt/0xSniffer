@@ -1,6 +1,8 @@
 
 #include "LogUtils.h"
 
+#include <stdlib.h>
+
 void LogUtils_ClearScreen() {
     system("cls");
 }
