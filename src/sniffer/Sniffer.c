@@ -168,29 +168,45 @@ typedef struct ip_address
 /* IPv4 header */
 typedef struct ip_header
 {
-    u_char    ver_ihl;        // Version (4 bits) + Internet header length (4 bits)
-    u_char    tos;            // Type of service
-    u_short tlen;            // Total length
-    u_short identification; // Identification
-    u_short flags_fo;        // Flags (3 bits) + Fragment offset (13 bits)
-    u_char    ttl;            // Time to live
-    u_char    proto;            // Protocol
-    u_short crc;            // Header checksum
-    ip_address    saddr;        // Source address
-    ip_address    daddr;        // Destination address
-    u_int    op_pad;            // Option + Padding
+    u_char      ver_ihl;            // Version (4 bits) + Internet header length (4 bits)
+    u_char      tos;                // Type of service
+    u_short     strlen;             // Total length
+    u_short     identification;     // Identification
+    u_short     flags_fo;           // Flags (3 bits) + Fragment offset (13 bits)
+    u_char      ttl;                // Time to live
+    u_char      proto;              // Protocol
+    u_short     crc;                // Header checksum
+    ip_address  saddr;              // Source address
+    ip_address  daddr;              // Destination address
+    u_int       op_pad;             // Option + Padding
 } ip_header;
+
 
 /* UDP header*/
 typedef struct udp_header
 {
-    u_short sport;            // Source port
-    u_short dport;            // Destination port
-    u_short len;            // Datagram length
-    u_short crc;            // Checksum
+    u_short sport;              // Source port
+    u_short dport;              // Destination port
+    u_short len;                // Datagram length
+    u_short crc;                // Checksum
 } udp_header;
 
-void Sniffer_prepareAddressesForPrinting(char* src_ip, char* dest_ip, ip_header* ih, u_short sport, u_short dport);
+// Ethernet header
+typedef struct eth_header
+{
+    u_char preamble[7];         // Preamble
+    u_char start_frame_delim;   // Start Frame Delimiter
+    u_char dest_MAC[6];         // @MAC Destination
+    u_char src_MAC[6];          // @MAC Source
+    u_int tag_8021Q;            // 802.1Q tag (optional)
+    u_short ethertype;          // Ethertype (Ethernet II) or length (IEEE 802.3)
+    u_char payload[1500];       // Payload
+    u_int crc;                  // Frame Check Sequence (32-bit CRC)
+    u_char ipg[12];             // Interpacket Gap
+} eth_header;
+
+void Sniffer_prepareIPAddressesForPrinting(char* src_ip, char* dest_ip, ip_header* ih, u_short sport, u_short dport);
+void Sniffer_prepareMACAddressesForPrinting(char* src_mac, char* dest_mac, eth_header* eth_header);
 
 void Sniffer_Stop() {
     Sniffer_CleanUp();
@@ -201,21 +217,27 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
     struct tm *ltime;
     char timestr[16];
     ip_header *ih;
+    eth_header *eh;
     udp_header *uh;
     u_int ip_len;
     u_short sport,dport;
     time_t local_tv_sec;
     char src_ip_string[100] = "";
     char dest_ip_string[100] = "";
+    char src_mac_string[100] = "";
+    char dest_mac_string[100] = "";
 
     /* convert the timestamp to readable format */
     local_tv_sec = header->ts.tv_sec;
     ltime = localtime(&local_tv_sec);
     strftime( timestr, sizeof timestr, "%H:%M:%S", ltime);
 
-    /* retireve the position of the ip header */
+    /* retrieve the position of the ip header */
     ih = (ip_header *) (pkt_data +
         14); //length of ethernet header
+
+    /* retrieve the position of the ethernet header */
+    eh = (eth_header *) (ih + sizeof(ip_header));
 
     /* retireve the position of the udp header */
     ip_len = (ih->ver_ihl & 0xf) * 4;
@@ -225,7 +247,8 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
     sport = ntohs( uh->sport );
     dport = ntohs( uh->dport );
 
-    Sniffer_prepareAddressesForPrinting(src_ip_string, dest_ip_string, ih, sport, dport);
+    Sniffer_prepareIPAddressesForPrinting(src_ip_string, dest_ip_string, ih, sport, dport);
+    Sniffer_prepareMACAddressesForPrinting(src_mac_string, dest_mac_string, eh);
 
     /* print ip addresses and udp ports */
     sprintf(writeBuffer + strlen(writeBuffer), "\n------------------------------------------------------------\n");
@@ -235,18 +258,22 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
         20,                // Format so that the string always occupies 20 chars.
         dest_ip_string);
 
+    // Print MAC Addresses
+    sprintf(writeBuffer + strlen(writeBuffer), "  Source @MAC      : %s\n",src_mac_string);
+    sprintf(writeBuffer + strlen(writeBuffer), "  Destination @MAC : %s\n",dest_mac_string);
+
     // Print Protocol
-    sprintf(writeBuffer + strlen(writeBuffer), "  Protocol  : %s\n",
+    sprintf(writeBuffer + strlen(writeBuffer), "  Protocol         : %s\n",
         protocols[ih->proto]);
 
     // Print TTL
-    sprintf(writeBuffer + strlen(writeBuffer), "  TTL       : %d\n", ih->ttl);
+    sprintf(writeBuffer + strlen(writeBuffer), "  TTL              : %d\n", ih->ttl);
 
     // Print packet length
-    sprintf(writeBuffer + strlen(writeBuffer), "  Length    : %d\n", header->len);
+    sprintf(writeBuffer + strlen(writeBuffer), "  Length           : %d\n", header->len);
 
     // Print timestamp
-    sprintf(writeBuffer + strlen(writeBuffer), "  Time      : %s.%.6ld\n", timestr, header->ts.tv_usec);
+    sprintf(writeBuffer + strlen(writeBuffer), "  Time             : %s.%.6ld\n", timestr, header->ts.tv_usec);
     sprintf(writeBuffer + strlen(writeBuffer), "------------------------------------------------------------\n");
 
     // Write to the pipe that is the standard input for a child process.
@@ -256,7 +283,7 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
     IOHandler_WriteToLogger(writeBuffer, WRITE_BUFFER_SIZE);
 }
 
-void Sniffer_prepareAddressesForPrinting(char* src_ip, char* dest_ip, ip_header* ih, u_short sport, u_short dport) {
+void Sniffer_prepareIPAddressesForPrinting(char* src_ip, char* dest_ip, ip_header* ih, u_short sport, u_short dport) {
     char ip_addr_formatted[10][5];
 
     // Convert values to strings
@@ -294,4 +321,51 @@ void Sniffer_prepareAddressesForPrinting(char* src_ip, char* dest_ip, ip_header*
     strcat(dest_ip, ip_addr_formatted[8]);
     strcat(dest_ip, ":");
     strcat(dest_ip, ip_addr_formatted[9]);
+}
+
+void Sniffer_prepareMACAddressesForPrinting(char* src_mac_string, char* dest_mac_string, eth_header* eth_header) {
+    char mac_addr_formatted[12][5];
+
+    // Convert values to strings
+    itoa(eth_header->src_MAC[0], mac_addr_formatted[0],16);
+    itoa(eth_header->src_MAC[1], mac_addr_formatted[1],16);
+    itoa(eth_header->src_MAC[2], mac_addr_formatted[2],16);
+    itoa(eth_header->src_MAC[3], mac_addr_formatted[3],16);
+    itoa(eth_header->src_MAC[4], mac_addr_formatted[4],16);
+    itoa(eth_header->src_MAC[5], mac_addr_formatted[5],16);
+    itoa(eth_header->dest_MAC[6], mac_addr_formatted[6],16);
+    itoa(eth_header->dest_MAC[7], mac_addr_formatted[7],16);
+    itoa(eth_header->dest_MAC[8], mac_addr_formatted[8],16);
+    itoa(eth_header->dest_MAC[9], mac_addr_formatted[9],16);
+    itoa(eth_header->dest_MAC[10], mac_addr_formatted[10],16);
+    itoa(eth_header->dest_MAC[11], mac_addr_formatted[11],16);
+
+    // Put those strings inside the corresponding buffers
+
+    // Source @MAC
+    strcat(src_mac_string, mac_addr_formatted[0]);
+    strcat(src_mac_string, ":");
+    strcat(src_mac_string, mac_addr_formatted[1]);
+    strcat(src_mac_string, ":");
+    strcat(src_mac_string, mac_addr_formatted[2]);
+    strcat(src_mac_string, ":");
+    strcat(src_mac_string, mac_addr_formatted[3]);
+    strcat(src_mac_string, ":");
+    strcat(src_mac_string, mac_addr_formatted[4]);
+    strcat(src_mac_string, ":");
+    strcat(src_mac_string, mac_addr_formatted[5]);
+
+    // Destination @MAC
+    strcat(dest_mac_string, mac_addr_formatted[6]);
+    strcat(dest_mac_string, ":");
+    strcat(dest_mac_string, mac_addr_formatted[7]);
+    strcat(dest_mac_string, ":");
+    strcat(dest_mac_string, mac_addr_formatted[8]);
+    strcat(dest_mac_string, ":");
+    strcat(dest_mac_string, mac_addr_formatted[9]);
+    strcat(dest_mac_string, ":");
+    strcat(dest_mac_string, mac_addr_formatted[10]);
+    strcat(dest_mac_string, ":");
+    strcat(dest_mac_string, mac_addr_formatted[11]);
+
 }
