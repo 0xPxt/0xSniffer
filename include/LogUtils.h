@@ -7,4 +7,6 @@ extern void LogUtils_ClearScreen(void);
 
 extern void LogUtils_DisplayBanner(void);
 
+extern void LogUtils_RequestFileName(char *fileName);
+
 #endif // LOG_UTILS

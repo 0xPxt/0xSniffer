@@ -6,7 +6,7 @@
 
 #include "IOHandler.h"
 
-#define WRITE_BUFFER_SIZE 1024
+#define WRITE_BUFFER_SIZE 4096
 
 char protocols[145][16] = {
     "HOPOPT         ",    //IPv6 Hop-by-Hop Option
@@ -199,7 +199,7 @@ typedef struct eth_header
     u_char dest_MAC[6];         // @MAC Destination
     u_char src_MAC[6];          // @MAC Source
     u_int tag_8021Q;            // 802.1Q tag (optional)
-    u_short ethertype;          // Ethertype (Ethernet II) or length (IEEE 802.3)
+    u_short ethertype;          // Ethertype (Ethernet II) or length (IEEE 802.3) -> Values below 1500 indicate size, values above 1536 indicate EtherType
     u_char payload[1500];       // Payload
     u_int crc;                  // Frame Check Sequence (32-bit CRC)
     u_char ipg[12];             // Interpacket Gap
@@ -274,6 +274,7 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
 
     // Print timestamp
     sprintf(writeBuffer + strlen(writeBuffer), "  Time             : %s.%.6ld\n", timestr, header->ts.tv_usec);
+
     sprintf(writeBuffer + strlen(writeBuffer), "------------------------------------------------------------\n");
 
     // Write to the pipe that is the standard input for a child process.
@@ -301,24 +302,22 @@ void Sniffer_prepareIPAddressesForPrinting(char* src_ip, char* dest_ip, ip_heade
     // Put those strings inside the corresponding buffers
 
     // Source @IP
-    strcat(src_ip, ip_addr_formatted[0]);
-    strcat(src_ip, ".");
-    strcat(src_ip, ip_addr_formatted[1]);
-    strcat(src_ip, ".");
-    strcat(src_ip, ip_addr_formatted[2]);
-    strcat(src_ip, ".");
-    strcat(src_ip, ip_addr_formatted[3]);
+    for (int i = 0; i < 4; i++) {
+        strcat(src_ip, ip_addr_formatted[i]);
+        strcat(src_ip, ".");
+    }
+
+    // Source Port
     strcat(src_ip, ":");
     strcat(src_ip, ip_addr_formatted[4]);
 
     // Destination @IP
-    strcat(dest_ip, ip_addr_formatted[5]);
-    strcat(dest_ip, ".");
-    strcat(dest_ip, ip_addr_formatted[6]);
-    strcat(dest_ip, ".");
-    strcat(dest_ip, ip_addr_formatted[7]);
-    strcat(dest_ip, ".");
-    strcat(dest_ip, ip_addr_formatted[8]);
+    for (int i = 5; i < 9; i++) {
+        strcat(dest_ip, ip_addr_formatted[i]);
+        strcat(dest_ip, ".");
+    }
+
+    // Destination Port
     strcat(dest_ip, ":");
     strcat(dest_ip, ip_addr_formatted[9]);
 }
@@ -327,45 +326,27 @@ void Sniffer_prepareMACAddressesForPrinting(char* src_mac_string, char* dest_mac
     char mac_addr_formatted[12][5];
 
     // Convert values to strings
-    itoa(eth_header->src_MAC[0], mac_addr_formatted[0],16);
-    itoa(eth_header->src_MAC[1], mac_addr_formatted[1],16);
-    itoa(eth_header->src_MAC[2], mac_addr_formatted[2],16);
-    itoa(eth_header->src_MAC[3], mac_addr_formatted[3],16);
-    itoa(eth_header->src_MAC[4], mac_addr_formatted[4],16);
-    itoa(eth_header->src_MAC[5], mac_addr_formatted[5],16);
-    itoa(eth_header->dest_MAC[6], mac_addr_formatted[6],16);
-    itoa(eth_header->dest_MAC[7], mac_addr_formatted[7],16);
-    itoa(eth_header->dest_MAC[8], mac_addr_formatted[8],16);
-    itoa(eth_header->dest_MAC[9], mac_addr_formatted[9],16);
-    itoa(eth_header->dest_MAC[10], mac_addr_formatted[10],16);
-    itoa(eth_header->dest_MAC[11], mac_addr_formatted[11],16);
+    for (int i = 0; i < 6; i++) {
+        itoa(eth_header->src_MAC[i], mac_addr_formatted[i],16);
+    }
+
+    for (int i = 6; i < 12; i++) {
+        itoa(eth_header->dest_MAC[i], mac_addr_formatted[i],16);
+    }
 
     // Put those strings inside the corresponding buffers
 
     // Source @MAC
-    strcat(src_mac_string, mac_addr_formatted[0]);
-    strcat(src_mac_string, ":");
-    strcat(src_mac_string, mac_addr_formatted[1]);
-    strcat(src_mac_string, ":");
-    strcat(src_mac_string, mac_addr_formatted[2]);
-    strcat(src_mac_string, ":");
-    strcat(src_mac_string, mac_addr_formatted[3]);
-    strcat(src_mac_string, ":");
-    strcat(src_mac_string, mac_addr_formatted[4]);
-    strcat(src_mac_string, ":");
+    for (int i = 0; i < 5; i++) {
+        strcat(src_mac_string, mac_addr_formatted[i]);
+        strcat(src_mac_string, ":");
+    }
     strcat(src_mac_string, mac_addr_formatted[5]);
 
     // Destination @MAC
-    strcat(dest_mac_string, mac_addr_formatted[6]);
-    strcat(dest_mac_string, ":");
-    strcat(dest_mac_string, mac_addr_formatted[7]);
-    strcat(dest_mac_string, ":");
-    strcat(dest_mac_string, mac_addr_formatted[8]);
-    strcat(dest_mac_string, ":");
-    strcat(dest_mac_string, mac_addr_formatted[9]);
-    strcat(dest_mac_string, ":");
-    strcat(dest_mac_string, mac_addr_formatted[10]);
-    strcat(dest_mac_string, ":");
+    for (int i = 6; i < 11; i++) {
+        strcat(dest_mac_string, mac_addr_formatted[i]);
+        strcat(dest_mac_string, ":");
+    }
     strcat(dest_mac_string, mac_addr_formatted[11]);
-
 }
