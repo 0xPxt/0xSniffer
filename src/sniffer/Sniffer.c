@@ -302,20 +302,22 @@ void Sniffer_prepareIPAddressesForPrinting(char* src_ip, char* dest_ip, ip_heade
     // Put those strings inside the corresponding buffers
 
     // Source @IP
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         strcat(src_ip, ip_addr_formatted[i]);
         strcat(src_ip, ".");
     }
+    strcat(src_ip, ip_addr_formatted[3]);
 
     // Source Port
     strcat(src_ip, ":");
     strcat(src_ip, ip_addr_formatted[4]);
 
     // Destination @IP
-    for (int i = 5; i < 9; i++) {
+    for (int i = 5; i < 8; i++) {
         strcat(dest_ip, ip_addr_formatted[i]);
         strcat(dest_ip, ".");
     }
+    strcat(dest_ip, ip_addr_formatted[8]);
 
     // Destination Port
     strcat(dest_ip, ":");
