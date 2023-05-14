@@ -25,6 +25,11 @@ CmdHandler_status_t CmdHandler_ProcessCommand(CmdHandler_cmdCode_t command) {
             break;
         }
 
+        case CmdHandler_cmdCode_LIST: {
+
+            break;
+        }
+
         case CmdHandler_cmdCode_IDLE: {
             printf("IDLE!\n");
             break;
@@ -44,6 +49,7 @@ void CmdHandler_PrintCommandList() {
     printf("-= %d =- [IDLE] Do nothing...\n", (int) CmdHandler_cmdCode_IDLE);
     printf("-= %d =- [EXIT] Safely exits the program.\n", (int) CmdHandler_cmdCode_EXIT);
     printf("-= %d =- [SAVE] Save the log to a .txt file.\n", (int) CmdHandler_cmdCode_SAVE);
+    printf("-= %d =- [LIST] List the last 10 captured Packets' IDs.\n", (int) CmdHandler_cmdCode_LIST);
 
     printf("\n");
 }

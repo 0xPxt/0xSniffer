@@ -33,14 +33,6 @@ int main(void) {
 
         printf("%s\n", chBuf);
         fprintf(log, "%s\n", chBuf);
-
-        //TODO
-        /*
-        if (exitProgram) {
-            fclose(log);
-            remove(log_tmp.txt);
-        }
-        */
     }
 
     return 0;
