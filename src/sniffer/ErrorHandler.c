@@ -14,7 +14,7 @@ static void CleanUpAndExit() {
     Sniffer_CleanUp();
     InterfaceHandler_CleanUp();
     IOHandler_CleanUp();
-    exit(1);
+    ExitProcess(1);
 }
 
 void ErrorHandler_DisplayPcapErrorAndExit(char *error_message, bool printErrBuff) {

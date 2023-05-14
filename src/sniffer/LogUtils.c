@@ -1,6 +1,8 @@
 
 #include "LogUtils.h"
 
+#include <stdlib.h>
+
 void LogUtils_ClearScreen() {
     system("cls");
 }
@@ -18,4 +20,9 @@ void LogUtils_DisplayBanner() {
     printf("\n");
 
     printf("\n");
+}
+
+void LogUtils_RequestFileName(char *fileName) {
+    printf("Please enter the name of the file [filename.txt] : ");
+    scanf("%s", fileName);
 }

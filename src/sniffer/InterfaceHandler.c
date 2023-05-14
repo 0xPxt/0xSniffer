@@ -42,12 +42,12 @@ InterfaceHandler_status_t InterfaceHandler_OpenCapture() {
         return InterfaceHandler_status_ERROR;
     } else {
         // Prepare capture
-        if ((InterfaceHandler_captureHandler = pcap_open_live(InterfaceHandler_currentInterface->name,	// Name of the device.
-                                BUFSIZ,			                                                        // Portion of the packet to capture. 
-                                                                                                        // Value 65536 grants that the whole packet is captured on all the MACs.
-                                1,				                                                        // Promiscuous mode.
-                                1000,			                                                        // Read timeout.
-                                ErrorHandler_GetPcapErrorBuffer()                                       // Error buffer.
+        if ((InterfaceHandler_captureHandler = pcap_open_live(InterfaceHandler_currentInterface->name,    // Name of the device.
+                                BUFSIZ,                                                                   // Portion of the packet to capture. 
+                                                                                                          // Value 65536 grants that the whole packet is captured on all the MACs.
+                                1,                                                                        // Promiscuous mode.
+                                1000,                                                                     // Read timeout.
+                                ErrorHandler_GetPcapErrorBuffer()                                         // Error buffer.
                                 )) == NULL)
         {
             ErrorHandler_DisplayPcapErrorAndExit("[InterfaceHandler] Unable to open the adapter. It is not supported by Npcap", true);
