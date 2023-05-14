@@ -5,7 +5,7 @@ typedef enum CmdHandler_cmdCode {
     CmdHandler_cmdCode_IDLE = 0,
     CmdHandler_cmdCode_EXIT = 1,
     CmdHandler_cmdCode_SAVE = 2,
-    CmdHandler_cmdCode_LIST = 3
+    CmdHandler_cmdCode_DUMP = 3
 } CmdHandler_cmdCode_t;
 
 typedef enum CmdHandler_status {

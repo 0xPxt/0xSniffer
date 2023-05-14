@@ -5,11 +5,13 @@
 
 #include "ErrorHandler.h"
 #include "LogUtils.h"
+#include "Packet.h"
 
 int CmdHandler_SaveLogAsTxt();
 
 CmdHandler_status_t CmdHandler_ProcessCommand(CmdHandler_cmdCode_t command) {
     char fileName[32] = {' '};
+    int id = 0;
 
     switch(command) {
         case CmdHandler_cmdCode_EXIT: {
@@ -25,8 +27,9 @@ CmdHandler_status_t CmdHandler_ProcessCommand(CmdHandler_cmdCode_t command) {
             break;
         }
 
-        case CmdHandler_cmdCode_LIST: {
-
+        case CmdHandler_cmdCode_DUMP: {
+            LogUtils_RequestPacketID(&id);
+            Packet_packetHexDump(&(Packet_listOfPackets[id]));
             break;
         }
 
@@ -49,7 +52,7 @@ void CmdHandler_PrintCommandList() {
     printf("-= %d =- [IDLE] Do nothing...\n", (int) CmdHandler_cmdCode_IDLE);
     printf("-= %d =- [EXIT] Safely exits the program.\n", (int) CmdHandler_cmdCode_EXIT);
     printf("-= %d =- [SAVE] Save the log to a .txt file.\n", (int) CmdHandler_cmdCode_SAVE);
-    printf("-= %d =- [LIST] List the last 10 captured Packets' IDs.\n", (int) CmdHandler_cmdCode_LIST);
+    printf("-= %d =- [DUMP] Dump the data of a selected packet.\n", (int) CmdHandler_cmdCode_DUMP);
 
     printf("\n");
 }

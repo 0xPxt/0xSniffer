@@ -9,4 +9,6 @@ extern void LogUtils_DisplayBanner(void);
 
 extern void LogUtils_RequestFileName(char *fileName);
 
+void LogUtils_RequestPacketID(int *id);
+
 #endif // LOG_UTILS

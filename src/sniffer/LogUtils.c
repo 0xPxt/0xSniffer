@@ -26,3 +26,9 @@ void LogUtils_RequestFileName(char *fileName) {
     printf("Please enter the name of the file [filename.txt] : ");
     scanf("%s", fileName);
 }
+
+void LogUtils_RequestPacketID(int *id) {
+    printf("Please enter the ID of the packet you wish to dump : ");
+    scanf("%d", id);
+}
+

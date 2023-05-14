@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "IOHandler.h"
+#include "Packet.h"
 
 #define WRITE_BUFFER_SIZE 4096
 
@@ -226,6 +227,11 @@ void Sniffer_ParsePacket(unsigned char *param, const struct pcap_pkthdr *header,
     char dest_ip_string[100] = "";
     char src_mac_string[100] = "";
     char dest_mac_string[100] = "";
+
+    packet_t packet;
+    Packet_initPacket(&packet, (struct pcap_pkthdr *) header, (unsigned char *) pkt_data);
+    Packet_addPacketToPacketList(&packet);
+    printf("id : %d\n",packet.id);
 
     /* convert the timestamp to readable format */
     local_tv_sec = header->ts.tv_sec;
